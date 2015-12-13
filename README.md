@@ -10,8 +10,9 @@ Warning
 
 __You might not need to use this.__
 See this discussion: [waitFor leads to wrong design](https://github.com/facebook/flux/issues/209).
+Also see this discussion about [reducers depending upon each other on Redux](https://gist.github.com/gaearon/d77ca812015c0356654f#gistcomment-1466314).
 
-In the motivation section, I’ve explained the alternative without using `waitFor`,
+In the motivation section, I’ve explained an alternative without using `waitFor`,
 but since I’ve alread spent time creating, testing, and documenting this thing,
 I’ll put it online anyway.
 
@@ -41,7 +42,7 @@ From the `interpretation`, I need to derive an expense entry which will be saved
 into the database.
 However, before I save it to the database, I want to be able to edit it before I save.
 
-There are two choices in architecturing this:
+I came up with two choices to architect this:
 
 1. Put `transcript`, `interpretation`, and `stagedDatabaseEntry` into the store.
    This is the first idea that comes into my mind.
