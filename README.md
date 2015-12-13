@@ -145,9 +145,9 @@ Now, some reducer returned the new state, and some returned a thunk:
 
 We then enter the __digest cycle__. We send the above state into each thunk.
 
-Since `transcript` is available, the thunk injected it to and invokes the reducer.
-Meanwhile, the `interpretation` is not yet available at that digest cycle,
-therefore the thunk returned itself.
+Since `transcript` is available, the thunk injects it and invokes the reducer.
+Meanwhile, the `interpretation` is not yet available during that digest cycle.
+In this case, the thunk returns itself.
 
 This is the resulting state:
 
