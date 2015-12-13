@@ -12,7 +12,7 @@ __You might not need to use this.__
 See this discussion: [waitFor leads to wrong design](https://github.com/facebook/flux/issues/209).
 
 In the motivation section, I’ve explained the alternative without using `waitFor`,
-but since I’ve alread spent time creating and testing this thing,
+but since I’ve alread spent time creating, testing, and documenting this thing,
 I’ll put it online anyway.
 
 
@@ -34,7 +34,7 @@ recognition. Therefore, there are these events:
 My `transcript` reducer consumes these series of events (actions) and produces
 the transcript of what I just said (e.g. “40 Baht food”).
 
-From the `transcript`, I need to derive an `interpretation` of the spoken text
+From the `transcript`, I need to derive an `interpretation` from the spoken text
 (e.g. `{ amount: 40, category: "food" }`).
 
 From the `interpretation`, I need to derive an expense entry which will be saved
@@ -62,10 +62,10 @@ There are two choices in architecturing this:
 
    For the last requirement that I want to modify the `stagedDatabaseEntry` before
    actually saving it to the database, I’ll just store the `stagedDatabaseOverrides`
-   instead and derive them on-the-fly.
+   instead and derive the actual entry on-the-fly.
 
-   This solution is less obvious to me, and I can only think of it as I write
-   the documentation of this `redux-waitfor`.
+   This solution is less obvious to me, and I only came up with it as I write
+   the documentation of this `redux-waitfor` package.
 
    Think of this approach as using a (non-materialized) view of the database.
    In fact, this may be a better option!
@@ -112,15 +112,16 @@ We then pass the state from other parts of the store into that thunk:
 
 Now we have the actual, new state.
 
-What really happens is that when we invoke that thunk `waitFor`, it will inject
-the state of the thing we’re waiting for into the `inject` parameter.
-That `inject` function then takes the required data and returns a reducer,
+What really happens is that when we invoke that thunk, it will inject
+the state of the thing it’s waiting for into the `inject` function
+(specified as a parameter to `waitFor`).
+That `inject` function then takes it and returns a reducer,
 which is then immediately invoked.
 
 
 ### combineReducers(reducers)
 
-This is a version of Redux’s `combineReducers` that works with thunks.
+This is Redux’s `combineReducers`, but works with thunks.
 
 __How it works:__ Perhaps the easiest way to explain it is by examples.
 Here is our current state:
@@ -132,7 +133,8 @@ Here is our current state:
 ```
 
 An action happened. It is dispatched to each reducer, just like Redux’s `combineReducers`.
-Some reducer returned the new state, and some returned a thunk:
+
+Now, some reducer returned the new state, and some returned a thunk:
 
 ```js
 { transcript: '40 Baht food',
@@ -140,10 +142,11 @@ Some reducer returned the new state, and some returned a thunk:
   stagedDatabaseEntry: [Function] }
 ```
 
-We then enter the __digest cycle__. We send this object into each thunk.
+We then enter the __digest cycle__. We send the above state into each thunk.
 
 Since `transcript` is available, the thunk injected it to and invokes the reducer.
-Meanwhile, since `interpretation` is not available yet at that time, the thunk returned itself.
+Meanwhile, the `interpretation` is not yet available at that digest cycle,
+therefore the thunk returned itself.
 
 This is the resulting state:
 
