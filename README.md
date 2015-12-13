@@ -45,10 +45,11 @@ However, before I save it to the database, I want to be able to edit it before I
 I came up with two choices to architect this:
 
 1. Put `transcript`, `interpretation`, and `stagedDatabaseEntry` into the store.
-   This is the first idea that comes into my mind.
-   “Surely I should do it this way,” I said to myself.
+   This is the first, most obvious idea that comes into my mind.
+   If I use Flux, I’d do it this way and it’d be perfectly fine.
+   _“This is clearly the way,”_ I said to myself.
 
-   But this means we need to set up dependencies between these reducers,
+   But this means we need mechanisms to set up dependencies between these reducers,
    so that when speech is recognized, the `interpretation` reducer has access
    to the latest `transcript`, and `stagedDatabaseEntry` has access to the
    latest `interpretation`.
@@ -66,10 +67,12 @@ I came up with two choices to architect this:
    instead and derive the actual entry on-the-fly.
 
    This solution is less obvious to me, and I only came up with it as I write
-   the documentation of this `redux-waitfor` package.
+   the documentation for this `redux-waitfor` package.
 
    Think of this approach as using a (non-materialized) view of the database.
-   In fact, this may be a better option!
+   In fact, this may be a better option.
+   The data in the store is normalized, which means no dependencies or need to synchronize.
+   No magic `waitFor` tricks, which leads to simpler code.
 
 
 Usage
