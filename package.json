@@ -16,5 +16,13 @@
   },
   "dependencies": {
     "redux": "^3.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dtinth/redux-waitfor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dtinth/redux-waitfor/issues"
+  },
+  "homepage": "https://github.com/dtinth/redux-waitfor#readme"
 }
