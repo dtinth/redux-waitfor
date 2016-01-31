@@ -77,100 +77,23 @@ Usage
 If you insist on using this thing, first, you need to import it:
 
 ```js
-import { waitFor, combineReducers } from 'redux-waitfor'
+import { combineReducers } from 'redux-waitfor'
 ```
-
-### waitFor(key, inject)
-
-This is a function that takes a reducer, and returns a reducer that waits for
-data from another part of the store with the specified `key`.
-
-```js
-const interpretationReducer = waitFor('transcript', transcript =>
-  (state = { }, action) => deriveInterpretationFromTranscript(transcript)
-)
-```
-
-But wait! How can a reducer wait for more data? That seems impossible.
-Let’s try invoking this magical reducer.
-
-```
-> interpretationReducer(void 0, action)
-[Function]
-```
-
-A function (a thunk) is returned instead of the new state!
-This signifies that we need more data from other parts of the store.
-We then pass the state from other parts of the store into that thunk:
-
-```
-> interpretationReducer(void 0, action)({
-    transcript: '40 Bath food'
-  })
-{ amount: 40, category: 'Food' }
-```
-
-Now we have the actual, new state.
-
-What really happens is that when we invoke that thunk, it will inject
-the state of the thing it’s waiting for into the `inject` function
-(specified as a parameter to `waitFor`).
-That `inject` function then takes it and returns a reducer,
-which is then immediately invoked.
-
 
 ### combineReducers(reducers)
 
-This is Redux’s `combineReducers`, but works with thunks.
-
-__How it works:__ Perhaps the easiest way to explain it is by examples.
-Here is our current state:
+Upgraded `combineReducers` that — in addition to giving the state and action — also gives your reducer a magical object which can be used to obtain the state of neighboring reducers.
 
 ```js
-{ transcript: '',
-  interpretation: null,
-  stagedDatabaseEntry: null }
+const interpretationReducer = (state = { }, action, magicalObject) => (
+  deriveInterpretationFromTranscript(magicalObject.transcript)
+)
 ```
 
-An action happened. It is dispatched to each reducer, just like Redux’s `combineReducers`.
-
-Now, some reducer returned the new state, and some returned a thunk:
+Using ES6 destructuring, this becomes:
 
 ```js
-{ transcript: '40 Baht food',
-  interpretation: [Function],
-  stagedDatabaseEntry: [Function] }
+const interpretationReducer = (state = { }, action, { transcript }) => (
+  deriveInterpretationFromTranscript(transcript)
+)
 ```
-
-We then enter the __digest cycle__. We send the above state into each thunk.
-
-Since `transcript` is available, the thunk injected it to and invokes the reducer.
-Meanwhile, the `interpretation` is not yet available at that digest cycle,
-therefore the thunk returned itself.
-
-This is the resulting state:
-
-```js
-{ transcript: '40 Baht food',
-  interpretation: { amount: 40, category: 'food' },
-  stagedDatabaseEntry: [Function] }
-```
-
-This means we need another digest cycle.
-We did the same, and obtain the final state:
-
-```js
-{ transcript: '40 Baht food',
-  interpretation: { amount: 40, category: 'food' },
-  stagedDatabaseEntry: { /* ... */ } }
-```
-
-For more example and tests, see [example.js](example.js) (which also serves as a unit test — it’s pretty comprehensive!).
-
-As you can see, this is quite advanced and requires lots of explanation.
-Perhaps you can take this advice from The Zen of Python instead:
-
-> __If the implementation is hard to explain, it's a bad idea.__<br />
-> If the implementation is easy to explain, it may be a good idea.
-
-So, unless you really need to, don’t use this library!

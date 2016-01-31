@@ -4,7 +4,8 @@
   "description": "Reducer combinator that allows reducers to wait upon each other.",
   "main": "index.js",
   "scripts": {
-    "test": "node example.js"
+    "test": "babel-node example.js",
+    "prepublish": "babel index.babel.js -o index.js"
   },
   "author": "Thai Pangsakulyanont <org.yi.dttvb@gmail.com> (http://dt.in.th/)",
   "license": "MIT",

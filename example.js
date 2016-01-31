@@ -1,12 +1,12 @@
 'use strict'
 
 import test from 'tape'
-import { waitFor, combineReducers } from './index'
+import { combineReducers } from './index'
 
 // First, I need a function that helps me create a reducer quickly.
 const createReducer = (spec) => (
-  (state = spec.initialState, action) => (
-    (handler => handler ? handler(state, action) : state)(spec['on' + action.type])
+  (state = spec.initialState, action, siblings) => (
+    (handler => handler ? handler(state, action, siblings) : state)(spec['on' + action.type])
   )
 )
 
@@ -24,7 +24,6 @@ test('country << CountryUpdate', assert => {
 })
 
 // Next is the city reducer. This is where we use `waitFor`.
-console.log(waitFor)
 const defaultCityFor = country => {
   if (country === 'Japan') return 'Tokyo'
   throw new Error('??!!?')
@@ -34,9 +33,9 @@ const city = createReducer({
   onCityUpdate: (state, action) => (
     Object.assign({ }, state, { city: action.city })
   ),
-  onCountryUpdate: waitFor('country', country => (state, action) => (
+  onCountryUpdate: (state, action, { country }) => (
     Object.assign({ }, state, { city: defaultCityFor(country.country) })
-  )),
+  ),
 })
 test('city << CityUpdate', assert => {
   const state = city({ city: 'Bangkok' }, { type: 'CityUpdate', city: 'Chiang Mai' })
@@ -49,8 +48,7 @@ test('city << CityUpdate', assert => {
 // return a thunk instead of the next state.
 test('city << CountryUpdate', assert => {
   const action = { type: 'CountryUpdate', country: 'Japan' }
-  const thunk = city({ city: 'Bangkok' }, action)
-  const state = thunk({ country: country(void 0, action) })
+  const state = city({ city: 'Bangkok' }, action, { country: country(void 0, action) })
   assert.deepEqual(state, { city: 'Tokyo' })
   assert.end()
 })
@@ -58,11 +56,7 @@ test('city << CountryUpdate', assert => {
 // Finally, our flight price reducer.
 const getFlightPrice = (country, city) => `Hypothetical price for ${city}, ${country}`
 const updateFlightPrice = (
-  waitFor('country', country =>
-    waitFor('city', city =>
-      (state, action) => Object.assign({ }, state, { price: getFlightPrice(country.country, city.city) })
-    )
-  )
+  (state, action, { country, city }) => Object.assign({ }, state, { price: getFlightPrice(country.country, city.city) })
 )
 const flightPrice = createReducer({
   initialState: { price: null },
@@ -71,8 +65,7 @@ const flightPrice = createReducer({
 })
 test('flightPrice << CountryUpdate', assert => {
   const action = { type: 'CountryUpdate', country: 'Japan' }
-  const thunk = flightPrice(void 0, action)
-  const state = thunk({
+  const state = flightPrice(void 0, action, {
     country: { country: 'Japan' },
     city: { city: 'Tokyo' },
   })
@@ -81,11 +74,7 @@ test('flightPrice << CountryUpdate', assert => {
 })
 test('flightPrice << CountryUpdate (multiple steps)', assert => {
   const action = { type: 'CountryUpdate', country: 'Japan' }
-  const thunk = flightPrice(void 0, action)
-  const state = thunk({
-    country: { country: 'Japan' },
-    city: () => { },
-  })({
+  const state = flightPrice(void 0, action, {
     country: { country: 'Japan' },
     city: { city: 'Tokyo' },
   })
@@ -113,20 +102,10 @@ test('reducer << CountryUpdate', assert => {
 test('combineReducers should work with complex dependency', assert => {
   const testReducer = combineReducers({
     a: (state = 0, action) => action,
-    b: waitFor('a', a => (state = 0) => a * 2),
-    c: waitFor('b', b => (state = 0) => b + 1),
-    d: waitFor('a', a => (state = 0) => a * a),
-    r: (
-      waitFor('a', a =>
-        waitFor('b', b =>
-          waitFor('c', c =>
-            waitFor('d', d =>
-              (state, action) => a + b + c + d
-            )
-          )
-        )
-      )
-    ),
+    b: (state = 0, action, { a }) => a * 2,
+    c: (state = 0, action, { b }) => b + 1,
+    d: (state = 0, action, { a }) => a * a,
+    r: (state, action, { a, b, c, d }) => a + b + c + d,
   })
   const state = testReducer(void 0, 123)
   assert.deepEqual(state, {
@@ -139,9 +118,9 @@ test('combineReducers should work with complex dependency', assert => {
   assert.end()
 })
 
-test('combineReducers should throw on unmet dependency', assert => {
+test('combineReducers should throw on circular dependency', assert => {
   const testReducer = combineReducers({
-    b: waitFor('a', a => (state = 0) => a * 2),
+    b: (state = 0, action, { b }) => state + 1,
   })
   assert.throws(() => testReducer(void 0, 123))
   assert.end()
